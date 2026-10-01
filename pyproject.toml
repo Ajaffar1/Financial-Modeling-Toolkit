@@ -3,11 +3,13 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 [project]
 name = "financial-modeling-toolkit"
-version = "0.1.0"
+version = "0.2.0"
 description = "Integrated financial forecasts, DCF valuation, and model controls"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 [project.optional-dependencies]
 excel = ["openpyxl>=3.1"]
+quant = ["numpy>=1.24", "scipy>=1.10"]
+all = ["openpyxl>=3.1", "numpy>=1.24", "scipy>=1.10"]
 [tool.setuptools.packages.find]
 include = ["finmodel*"]

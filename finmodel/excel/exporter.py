@@ -12,6 +12,11 @@ def export_excel(model, path):
     ws.append(["years", len(model.periods)])
     for k, v in asdict(model.assumptions).items():
         ws.append([k, v])
+    ws = wb.create_sheet("Drivers")
+    ws.append(["Year", "Assumption", "Value"])
+    for year, overrides in sorted(model.drivers.items()):
+        for key, value in overrides.items():
+            ws.append([year, key, value])
     ws = wb.create_sheet("Opening")
     for k, v in asdict(model.opening).items():
         ws.append([k, v])

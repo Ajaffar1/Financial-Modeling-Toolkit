@@ -1,14 +1,15 @@
 # Financial Modeling Toolkit
 
-A Python v0.1 library connecting operating assumptions to integrated financial
-statements, discounted cash flow valuation, scenarios, and model controls.
+A Python library for corporate-finance modeling and quantitative investment research.
+Version 0.2 adds portfolio construction, backtesting, risk, factors, derivatives,
+fixed income, and stochastic valuation alongside integrated financial statements.
 
 ## Install
 
 Requires Python 3.10 or later. From this repository:
 
 ```sh
-python -m pip install '.[excel]'
+python -m pip install '.[all]'
 ```
 
 For calculations without Excel dependencies, use `python -m pip install .`.
@@ -58,7 +59,7 @@ return independent models; overrides replace values rather than add deltas.
 - Cash taxes equal the tax rate times positive pretax income; losses generate no
   immediate tax benefit. Deferred tax and loss carryforwards are not modeled.
 - Opening equity is derived from opening net assets. Net income flows into equity;
-  dividends, share issues, acquisitions, and disposals are outside v0.1.
+  dividends, share issues, acquisitions, and disposals are outside the current model.
 - Unlevered cash flow uses EBIT less cash taxes on positive EBIT, plus depreciation,
   less capex and the change in working capital. DCF uses annual end-period
   discounting and Gordon-growth terminal value. WACC must exceed terminal growth.
@@ -97,10 +98,11 @@ Modules are grouped under `statements`, `valuation`, `forecasting`, `debt`,
 
 ## Roadmap
 
-Detailed working capital; time-varying drivers; revolver facilities; valuation
-multiples and investment returns; formula-aware Excel adapters; and a separate
-Canadian tax extension with rules versioned by tax year (CCA and project economics).
-These are planned features, not implemented calculations. This toolkit is a
+Further development: detailed working capital, revolver facilities, investment
+returns, formula-aware Excel adapters, and a separate Canadian tax extension with
+rules versioned by tax year (CCA and project economics).
+Detailed working capital, revolvers, investment-return models, formula-aware Excel adapters,
+and Canadian tax rules are planned rather than implemented. This toolkit is a
 modeling aid; validate assumptions and results before relying on them.
 
 MIT licensed. See LICENSE.
@@ -113,3 +115,60 @@ tag (for example `v0.1.0`). The release workflow verifies the version, runs test
 builds and checks a wheel and source distribution, and attaches them to a GitHub
 release. It uses GitHub's built-in workflow token; no persistent release secret
 is needed. PyPI publishing is not configured.
+
+
+## Quantitative research API
+
+Install `.[quant]` for NumPy/SciPy analytics or `.[all]` for analytics plus Excel.
+The core corporate-finance API remains usable without these optional dependencies.
+
+| Area | Implemented capability |
+| --- | --- |
+| Portfolio construction | Constrained minimum variance, target return, weight bounds, diagonal covariance shrinkage |
+| Backtesting | Delayed targets, drifted holdings, transaction costs, walk-forward allocation |
+| Risk | Historical VaR/expected shortfall, volatility contributions, linear stress P&L |
+| Factors | OLS alpha/betas, R², HAC/Newey–West uncertainty and approximate p-values |
+| Derivatives | European Black–Scholes calls/puts, dividend yield, Greeks, implied volatility |
+| Fixed income | Bullet bond pricing, yield inversion, duration, convexity |
+| Valuation | Correlated seeded assumption simulation, quantiles, EV/equity bridge, multiples |
+| Credit controls | Leverage, coverage, and minimum-cash covenant checks |
+
+```python
+import numpy as np
+from finmodel.portfolio.optimization import minimum_variance
+from finmodel.risk.measures import risk_contributions, stress_pnl
+from finmodel.derivatives.options import black_scholes, implied_volatility
+
+covariance = np.array([[0.04, 0.01], [0.01, 0.09]])
+allocation = minimum_variance([0.08, 0.12], covariance, target_return=0.09)
+print(allocation.weights)
+print(risk_contributions(allocation.weights, covariance))
+print(stress_pnl(allocation.weights, [[-0.20, -0.35]], portfolio_value=10_000_000))
+price = black_scholes(100, 105, 1, 0.04, 0.25)
+print(implied_volatility(price, 100, 105, 1, 0.04))
+```
+
+Run `python examples/quant_research.py` after installation for a complete, seeded,
+synthetic portfolio/factor/risk/options/bond/valuation report. See
+[methodology](docs/methodology.md) for units, time alignment, and limitations.
+
+## Year-specific operating forecasts
+
+```python
+model.forecast(5, drivers={
+    1: {"revenue_growth": 0.02, "capex_ratio": 0.06},
+    2: {"ebitda_margin": 0.20},
+})
+```
+
+Overrides apply only to the specified year and take precedence over base/scenario
+assumptions for that year. Unspecified years use base assumptions. Excel round trips
+preserve drivers. WACC and terminal growth stay valuation-date assumptions.
+
+## Scope and deployment
+
+This is a research library, not an institutionally certified trading or bank-risk
+platform. It is not affiliated with Goldman Sachs or any hedge fund. Production
+use would require independent model validation, controlled market-data pipelines,
+portfolio/accounting reconciliation, operational monitoring, and execution systems.
+There are no live data feeds, broker connections, or automatic trades.

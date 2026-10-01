@@ -61,13 +61,21 @@ class FinancialModel:
         self.opening = opening if opening is not None else OpeningBalance(working_capital=a.revenue * a.working_capital_ratio, ppe=a.revenue * a.capex_ratio / max(a.depreciation_rate, 0.1))
         self.name = name
         self.periods = ()
-    def forecast(self, years=5):
+        self.drivers = {}
+    def forecast(self, years=5, *, drivers=None):
         if isinstance(years, bool) or not isinstance(years, int) or years < 1:
             raise ValueError("years must be a positive integer")
+        drivers = {} if drivers is None else {year: dict(values) for year, values in drivers.items()}
+        allowed = {"revenue_growth", "ebitda_margin", "tax_rate", "working_capital_ratio", "capex_ratio", "depreciation_rate", "interest_rate", "annual_debt_repayment"}
+        for year, values in drivers.items():
+            if isinstance(year, bool) or not isinstance(year, int) or not 1 <= year <= years or not set(values) <= allowed:
+                raise ValueError("Drivers require forecast-year keys and supported operating assumptions")
+            replace(self.assumptions, **values)
         a, b, revenue = self.assumptions, self.opening, self.assumptions.revenue
         equity = b.equity
         periods = []
         for year in range(1, years + 1):
+            a = replace(self.assumptions, **drivers.get(year, {}))
             revenue *= 1 + a.revenue_growth
             ebitda = revenue * a.ebitda_margin
             depreciation = b.ppe * a.depreciation_rate
@@ -85,6 +93,7 @@ class FinancialModel:
             b = BalanceSheet(b.cash + cashflow.net_change, nwc, b.ppe + capex - depreciation, debt.closing, equity)
             periods.append(Period(year, income, b, cashflow))
         self.periods = tuple(periods)
+        self.drivers = drivers
         return self
     def _valuation(self):
         if not self.periods:
@@ -99,7 +108,7 @@ class FinancialModel:
         """Overrides are absolute replacement values, including growth/margins."""
         model = type(self)(assumptions=replace(self.assumptions, **overrides), opening=self.opening, name=name)
         if self.periods:
-            model.forecast(len(self.periods))
+            model.forecast(len(self.periods), drivers=self.drivers)
         return model
     def sensitivity(self, row="wacc", column="terminal_growth", *, row_values=None, column_values=None):
         if row == column:

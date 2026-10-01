@@ -21,6 +21,16 @@ def from_excel(cls, path):
         if inputs.pop("finmodel_schema") != 1:
             raise ValueError("Unsupported workbook schema")
         name, years = inputs.pop("name"), inputs.pop("years")
-        return cls(assumptions=Assumptions(**inputs), opening=OpeningBalance(**pairs("Opening")), name=name).forecast(years)
+        drivers = {}
+        if "Drivers" in wb.sheetnames:
+            for year, key, value in wb["Drivers"].iter_rows(min_row=2, values_only=True):
+                if year is None and key is None and value is None:
+                    continue
+                if isinstance(value, str) and value.startswith("="):
+                    raise ValueError("Input formulas are unsupported")
+                if key in drivers.setdefault(year, {}):
+                    raise ValueError("Duplicate driver input")
+                drivers[year][key] = value
+        return cls(assumptions=Assumptions(**inputs), opening=OpeningBalance(**pairs("Opening")), name=name).forecast(years, drivers=drivers)
     finally:
         wb.close()
