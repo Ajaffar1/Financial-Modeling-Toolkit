@@ -1,0 +1,115 @@
+# Financial Modeling Toolkit
+
+A Python v0.1 library connecting operating assumptions to integrated financial
+statements, discounted cash flow valuation, scenarios, and model controls.
+
+## Install
+
+Requires Python 3.10 or later. From this repository:
+
+```sh
+python -m pip install '.[excel]'
+```
+
+For calculations without Excel dependencies, use `python -m pip install .`.
+The package is not yet published to PyPI.
+
+## Quick start
+
+```python
+from finmodel import DCFModel, OpeningBalance
+
+model = DCFModel(
+    revenue=100_000_000,
+    ebitda_margin=0.22,
+    tax_rate=0.265,
+    wacc=0.09,
+    terminal_growth=0.025,
+    opening=OpeningBalance(
+        cash=5_000_000, working_capital=15_000_000,
+        ppe=40_000_000, debt=20_000_000,
+    ),
+).forecast(years=5)
+
+print(model.enterprise_value())
+print(model.equity_value())
+print(model.audit())
+print(model.sensitivity("wacc", "terminal_growth"))
+
+downside = model.scenario("Downside", {"revenue_growth": -0.05})
+model.export_excel("Company_Model.xlsx")
+```
+
+`FinancialModel` and `DCFModel` expose the same integrated model API. Scenarios
+return independent models; overrides replace values rather than add deltas.
+`forecast()` replaces the forecast and returns the model. Sensitivity returns
+`{(row_value, column_value): enterprise_value}` and accepts explicit
+`row_values` and `column_values`. Invalid valuation combinations raise an error.
+
+## Accounting and valuation conventions
+
+- Revenue is the opening/base-year figure. Year 1 applies revenue growth.
+- EBITDA uses revenue times EBITDA margin. Depreciation applies to opening PP&E;
+  capex is a revenue percentage. No depreciation is charged on current-year capex.
+- Working capital is net operating working capital, represented as a single net
+  asset. This is a condensed balance sheet, not a gross AR/inventory/AP model.
+- Interest is charged on beginning-of-year debt. Repayments are capped at debt
+  outstanding. No automatic revolver or cash sweep is assumed.
+- Cash taxes equal the tax rate times positive pretax income; losses generate no
+  immediate tax benefit. Deferred tax and loss carryforwards are not modeled.
+- Opening equity is derived from opening net assets. Net income flows into equity;
+  dividends, share issues, acquisitions, and disposals are outside v0.1.
+- Unlevered cash flow uses EBIT less cash taxes on positive EBIT, plus depreciation,
+  less capex and the change in working capital. DCF uses annual end-period
+  discounting and Gordon-growth terminal value. WACC must exceed terminal growth.
+- Equity value uses **opening-date** cash and debt. All amounts use a single,
+  user-selected currency and consistent units; no currency conversion is performed.
+- Default opening balances are illustrative. Supply actual opening balances for
+  company analysis. Negative cash remains visible as a funding shortfall.
+
+## Controls and Excel
+
+`audit()` returns structured findings with code, severity, message, and year.
+It checks balance-sheet equality, cash reconciliation, negative cash/debt/PP&E,
+nonpositive enterprise value, and terminal value above 75% of enterprise value.
+Warnings require review and do not automatically invalidate the model.
+
+`finmodel.forecasting.scenarios.assumption_changes(base, downside)` reports all
+changed assumptions. `finmodel.validation.balance_checks.circular_references`
+checks an explicitly supplied dependency graph. It does not scan workbook formulas.
+The core forecast is sequential and avoids an interest/cash circularity.
+
+Excel export writes calculated values and input sheets, not live Excel formulas.
+`FinancialModel.from_excel("Company_Model.xlsx")` imports only this toolkit's
+version 1 workbook and recomputes from the Assumptions and Opening sheets.
+Editing output statement cells does not change the imported model. Formula inputs
+are rejected. Arbitrary third-party Excel models are unsupported.
+
+## Development
+
+```sh
+python -m unittest discover -s tests -v
+python examples/basic.py  # after installation
+```
+
+Modules are grouped under `statements`, `valuation`, `forecasting`, `debt`,
+`analysis`, `excel`, and `validation`. GitHub Actions tests Python 3.10–3.13.
+
+## Roadmap
+
+Detailed working capital; time-varying drivers; revolver facilities; valuation
+multiples and investment returns; formula-aware Excel adapters; and a separate
+Canadian tax extension with rules versioned by tax year (CCA and project economics).
+These are planned features, not implemented calculations. This toolkit is a
+modeling aid; validate assumptions and results before relying on them.
+
+MIT licensed. See LICENSE.
+
+## Automated builds and releases
+
+Every push and pull request runs tests on Python 3.10–3.13. To publish a GitHub
+release, update the version in `pyproject.toml`, commit it, then push a matching
+tag (for example `v0.1.0`). The release workflow verifies the version, runs tests,
+builds and checks a wheel and source distribution, and attaches them to a GitHub
+release. It uses GitHub's built-in workflow token; no persistent release secret
+is needed. PyPI publishing is not configured.
