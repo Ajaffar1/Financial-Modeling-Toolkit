@@ -1,7 +1,8 @@
 # Financial Modeling Toolkit
 
 A Python library for corporate-finance modeling and quantitative investment research.
-Version 0.2 adds portfolio construction, backtesting, risk, factors, derivatives,
+Version 0.3 adds advanced statistical research, allocation, and execution models
+on top of portfolio construction, backtesting, risk, factors, derivatives,
 fixed income, and stochastic valuation alongside integrated financial statements.
 
 ## Install
@@ -172,3 +173,36 @@ platform. It is not affiliated with Goldman Sachs or any hedge fund. Production
 use would require independent model validation, controlled market-data pipelines,
 portfolio/accounting reconciliation, operational monitoring, and execution systems.
 There are no live data feeds, broker connections, or automatic trades.
+
+
+## Advanced quantitative research (v0.3)
+
+| Research area | Algorithms |
+| --- | --- |
+| Covariance | Gaussian OAS shrinkage, exponentially weighted covariance |
+| Allocation | Convex risk budgets, Black–Litterman Bayesian views, sparse CVaR linear programming |
+| Statistical arbitrage | OU spread calibration, causal Kalman hedge-ratio filtering |
+| Volatility and regimes | Stationary GARCH(1,1), log-domain Gaussian HMM with EM |
+| Experiment controls | Event-overlap purging, embargo, probabilistic and deflated Sharpe |
+| Derivatives simulation | Randomized Sobol Asian calls with independently calibrated control variates |
+| Execution mathematics | Inventory-aware quotes, tridiagonal optimal-liquidation schedules |
+
+```python
+from finmodel.risk.covariance import oas_covariance
+from finmodel.portfolio.advanced import risk_parity, minimum_cvar
+from finmodel.derivatives.monte_carlo import asian_call
+from finmodel.execution.optimal_execution import optimal_liquidation
+
+# training_returns: observations × assets, decimal returns, training data only
+cov, shrinkage = oas_covariance(training_returns)
+weights = risk_parity(cov)
+tail_allocation = minimum_cvar(training_returns, confidence=0.95)
+option = asian_call(100, 100, 1, 0.04, 0.20, seed=42)
+plan = optimal_liquidation(1000, 1, intervals=20)
+```
+
+Run `python examples/advanced_research.py` for a reproducible synthetic lab.
+Read [advanced methodology](docs/advanced_research.md) before selecting data,
+units, thresholds, or interpreting statistical confidence. Algorithms follow
+published literature; they do not replicate a proprietary fund's system or imply
+comparable investment performance.

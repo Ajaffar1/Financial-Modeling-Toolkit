@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0
+
+- Add OAS/EWMA covariance, convex risk budgeting, Black–Litterman, and sparse CVaR.
+- Add OU estimation, Kalman hedge filtering, Gaussian GARCH, and Gaussian HMM.
+- Add event-purged CV/embargo and probabilistic/deflated Sharpe diagnostics.
+- Add randomized Sobol Asian valuation with independent-pilot control variates.
+- Add inventory quote and optimal-liquidation research models.
+- Add advanced synthetic lab, methodology/reference notes, and 37 tests.
+
 ## 0.2.0
 
 - Add portfolio construction with target returns and allocation bounds.

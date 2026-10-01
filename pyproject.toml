@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 [project]
 name = "financial-modeling-toolkit"
-version = "0.2.0"
+version = "0.3.0"
 description = "Integrated financial forecasts, DCF valuation, and model controls"
 requires-python = ">=3.10"
 license = {text = "MIT"}
